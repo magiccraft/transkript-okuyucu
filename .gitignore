@@ -1,0 +1,28 @@
+## Build and temporary folders
+bin/
+obj/
+out/
+
+## User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+## IDE / Editors
+.vscode/
+.idea/
+*.swp
+*.lock
+
+## macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+## Logs
+*.log
+
+## Publish output
+/publish/

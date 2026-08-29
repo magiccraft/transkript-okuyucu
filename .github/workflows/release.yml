@@ -1,0 +1,90 @@
+name: Build & Release Executables
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build Multiplatform Executables
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          - rid: win-x64
+            os-name: windows
+            artifact-name: TranskriptOkuyucu-Windows-x64
+            is-windows: true
+          - rid: osx-x64
+            os-name: osx-intel
+            artifact-name: TranskriptOkuyucu-macOS-Intel
+            is-windows: false
+          - rid: osx-arm64
+            os-name: osx-apple-silicon
+            artifact-name: TranskriptOkuyucu-macOS-AppleSilicon
+            is-windows: false
+          - rid: linux-x64
+            os-name: linux
+            artifact-name: TranskriptOkuyucu-Linux-x64
+            is-windows: false
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 9 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Publish Self-Contained Binary (${{ matrix.rid }})
+        run: |
+          dotnet publish -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishSingleFile=true -o ./publish/${{ matrix.rid }}
+
+      - name: Archive artifacts
+        run: |
+          cd ./publish/${{ matrix.rid }}
+          zip -r ../../${{ matrix.artifact-name }}.zip .
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: ${{ matrix.artifact-name }}.zip
+
+  create-release:
+    name: Create GitHub Release
+    needs: build-and-release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./release-artifacts
+
+      - name: Flatten release files
+        run: |
+          mkdir ./final-release
+          find ./release-artifacts -name "*.zip" -exec mv {} ./final-release/ \;
+          ls -la ./final-release/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./final-release/*.zip
+          name: Release ${{ github.ref_name || 'v1.0.0' }}
+          tag_name: ${{ github.ref_name || 'v1.0.0' }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
