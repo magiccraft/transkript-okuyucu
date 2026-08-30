@@ -18,6 +18,8 @@ A modern, fast, and responsive web application built with **C# and .NET 9** that
 - **⏱️ Timestamped Transcript Reader:** Automatically detects and lists all available captions (manual & auto-generated tracks) in any language.
 - **⚡ Real-Time Synchronized Highlighting:** Automatically highlights the spoken line in real time as the video plays, with smooth auto-scroll to keep the active line in view.
 - **🎯 Click-to-Seek Navigation:** Clicking any transcript line or timestamp immediately seeks the YouTube video to that exact second.
+- **📖 Interactive Vocabulary & Dictionary Popup:** Click any word in the transcript to instantly view its Turkish translation, detailed English definitions, parts of speech, and listen to authentic native pronunciation audio. Powered by built-in offline dictionary with online fallback.
+- **🤖 AI Video Summary & Analysis:** Integrated AI assistant powered by Google Gemini to generate comprehensive summaries, key takeaways, action items, or answer custom questions about the video.
 - **📄 Word (.docx) Export:** Generates professional Microsoft Word documents containing video metadata (title, channel, link) and a styled timestamped transcript table.
 - **📦 Multi-Format Export:** Download transcripts in **DOCX**, **TXT**, **SRT (Subtitles)**, or copy directly to clipboard.
 - **🎮 Sleek Hover Video Controller:** Custom floating overlay player controls (Play/Pause, -10s/+10s seek, interactive progress bar with time hover tooltip, volume slider with mute, playback speed selector, and fullscreen toggle).
@@ -99,6 +101,8 @@ C# ve .NET 9 teknolojileri ile geliştirilmiş, YouTube videolarının altyazı 
 - **Zaman Damgalı Transkript Okuyucu:** YouTube videolarının resmi ve otomatik oluşturulmuş tüm altyazı dillerini algılar ve listeler.
 - **Canlı Eşzamanlı Vurgulama (Sync Highlight):** Gömülü YouTube videosu oynatılırken o an konuşulan transkript satırı anlık olarak parlar ve otomatik kaydırma ile ekranda tutulur.
 - **Zaman Damgasına Tıklayarak Atlama:** Transkriptteki herhangi bir satıra veya zaman damgasına tıklandığında video doğrudan o saniyeye sarar ve oynatır.
+- **📖 İnteraktif Kelime & Sözlük Pop-up:** Transkriptteki herhangi bir kelimeye tıklayarak anında Türkçe karşılığını, detaylı İngilizce tanımlarını, kelime türlerini ve sesli doğru telaffuzunu dinleyebilirsiniz. Çevrimdışı Türkçe sözlük veri tabanı ve çevrimiçi sözlük desteği içerir.
+- **🤖 Yapay Zeka (AI) Video Özeti & Analiz:** Google Gemini destekli yerleşik yapay zeka asistanı ile video transkriptinden ana noktalar, özet, yapılacaklar listesi veya özel soru-cevap analizi üretme.
 - **Word (.docx) İndirme:** Video başlığı, kanal adı, video linki ve zaman damgalı konuşma tablosunu içeren profesyonel bir Word belgesi üretir.
 - **Farklı Dışa Aktarma Seçenekleri:** Word (.docx), Metin (.txt), Altyazı (.srt) ve Panoya Kopyalama.
 - **Hover Video Kontrol Barı:** Video üzerine gelindiğinde görünen şık oynatıcı kontrolleri (Oynat/Durdur, -10s/+10s sarma, hover zaman önizlemeli progress bar, ses kaydırıcısı ve mute, oynatma hızı seçici, tam ekran ve klavye kısayolları).

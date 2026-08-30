@@ -20,13 +20,15 @@ const state = {
     hideControlsTimeout: null,
     volume: 100,
     isMuted: false,
-    playbackSpeed: 1
+    playbackSpeed: 1,
+    repeatIndex: -1
 };
 
 // DOM Elements
 const elements = {
-    themeToggle: document.getElementById('themeToggle'),
-    settingsBtn: document.getElementById('settingsBtn'),
+    themeToggle: document.getElementById('themeToggleTranscript'),
+    settingsBtn: document.getElementById('settingsBtnTranscript'),
+    modalThemeToggleBtn: document.getElementById('modalThemeToggleBtn'),
     settingsModal: document.getElementById('settingsModal'),
     closeSettingsBtn: document.getElementById('closeSettingsBtn'),
     saveSettingsBtn: document.getElementById('saveSettingsBtn'),
@@ -70,14 +72,11 @@ const elements = {
     transcriptCard: document.querySelector('.transcript-card'),
     langSelectorWrapper: document.getElementById('langSelectorWrapper'),
     languageSelect: document.getElementById('languageSelect'),
+    zenModeBtn: document.getElementById('zenModeBtn'),
     transcriptToolbar: document.getElementById('transcriptToolbar'),
     transcriptSearch: document.getElementById('transcriptSearch'),
     clearSearchBtn: document.getElementById('clearSearchBtn'),
     autoScrollToggle: document.getElementById('autoScrollToggle'),
-    summarizeBtn: document.getElementById('summarizeBtn'),
-    aiSummaryBox: document.getElementById('aiSummaryBox'),
-    aiSummaryContent: document.getElementById('aiSummaryContent'),
-    closeSummaryBtn: document.getElementById('closeSummaryBtn'),
     transcriptList: document.getElementById('transcriptList'),
     itemCountBadge: document.getElementById('itemCountBadge'),
     transcriptFooter: document.getElementById('transcriptFooter'),
@@ -86,7 +85,18 @@ const elements = {
     downloadDocxBtn: document.getElementById('downloadDocxBtn'),
     copyTranscriptBtn: document.getElementById('copyTranscriptBtn'),
     downloadTxtBtn: document.getElementById('downloadTxtBtn'),
-    downloadSrtBtn: document.getElementById('downloadSrtBtn')
+    downloadSrtBtn: document.getElementById('downloadSrtBtn'),
+
+    // Dictionary Pop-up Modal (Tasarım 1)
+    dictTooltip: document.getElementById('dictTooltip'),
+    dictWord: document.getElementById('dictWord'),
+    dictPhonetic: document.getElementById('dictPhonetic'),
+    dictSpeakBtn: document.getElementById('dictSpeakBtn'),
+    dictLangTag: document.getElementById('dictLangTag'),
+    dictCloseBtn: document.getElementById('dictCloseBtn'),
+    dictBody: document.getElementById('dictBody'),
+    dictCopyBtn: document.getElementById('dictCopyBtn'),
+    dictHint: document.getElementById('dictHint')
 };
 
 /* ==========================================================
@@ -97,6 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     setupVideoControlsEvents();
     setupKeyboardShortcuts();
+    setupDictionaryEvents();
 });
 
 function initTheme() {
@@ -109,6 +120,40 @@ function toggleTheme() {
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('transkript_theme', newTheme);
+    updateModalThemeIcons();
+}
+
+function updateModalThemeIcons() {
+    if (elements.modalThemeToggleBtn) {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const sunIcon = elements.modalThemeToggleBtn.querySelector('.sun');
+        const moonIcon = elements.modalThemeToggleBtn.querySelector('.moon');
+        const textSpan = elements.modalThemeToggleBtn.querySelector('#modalThemeToggleText');
+        if (currentTheme === 'dark') {
+            if (sunIcon) sunIcon.style.display = 'block';
+            if (moonIcon) moonIcon.style.display = 'none';
+            if (textSpan) textSpan.textContent = 'Gündüz Moduna Geç';
+        } else {
+            if (sunIcon) sunIcon.style.display = 'none';
+            if (moonIcon) moonIcon.style.display = 'block';
+            if (textSpan) textSpan.textContent = 'Gece Moduna Geç';
+        }
+    }
+}
+
+function toggleZenMode() {
+    document.body.classList.toggle('zen-mode-active');
+    
+    if (elements.zenModeBtn) {
+        const span = elements.zenModeBtn.querySelector('span');
+        if (span) {
+            if (document.body.classList.contains('zen-mode-active')) {
+                span.textContent = 'Normal Görünüm';
+            } else {
+                span.textContent = 'Zen Modu';
+            }
+        }
+    }
 }
 
 /* ==========================================================
@@ -116,10 +161,24 @@ function toggleTheme() {
    ========================================================== */
 function setupEventListeners() {
     // Theme toggle
-    elements.themeToggle.addEventListener('click', toggleTheme);
+    if (elements.themeToggle) {
+        elements.themeToggle.addEventListener('click', toggleTheme);
+    }
+    
+    if (elements.modalThemeToggleBtn) {
+        elements.modalThemeToggleBtn.addEventListener('click', toggleTheme);
+    }
+
+    // Zen Mode toggle
+    if (elements.zenModeBtn) {
+        elements.zenModeBtn.addEventListener('click', toggleZenMode);
+    }
 
     // Settings Modal
-    elements.settingsBtn.addEventListener('click', openSettingsModal);
+    if (elements.settingsBtn) {
+        elements.settingsBtn.addEventListener('click', openSettingsModal);
+    }
+    
     elements.closeSettingsBtn.addEventListener('click', closeSettingsModal);
     elements.saveSettingsBtn.addEventListener('click', saveSettings);
     elements.settingsModal.addEventListener('click', (e) => {
@@ -172,11 +231,8 @@ function setupEventListeners() {
         renderTranscriptItems();
     });
 
-    // AI Summarize
-    elements.summarizeBtn.addEventListener('click', handleSummarize);
-    elements.closeSummaryBtn.addEventListener('click', () => {
-        elements.aiSummaryBox.style.display = 'none';
-    });
+    // Transcript Item Events (Event Delegation)
+    elements.transcriptList.addEventListener('click', handleTranscriptListClick);
 
     // Alert Close
     elements.alertBox.querySelector('.alert-close').addEventListener('click', () => {
@@ -471,6 +527,11 @@ function setupKeyboardShortcuts() {
         } else if (e.key === 'f' || e.key === 'F') {
             e.preventDefault();
             toggleFullscreen();
+        } else if (e.key === 'Escape') {
+            if (document.body.classList.contains('zen-mode-active')) {
+                e.preventDefault();
+                toggleZenMode();
+            }
         }
     });
 }
@@ -481,6 +542,7 @@ function setupKeyboardShortcuts() {
 function openSettingsModal() {
     elements.aiProviderSelect.value = localStorage.getItem('transkript_ai_provider') || 'Gemini';
     elements.aiApiKeyInput.value = localStorage.getItem('transkript_ai_apikey') || '';
+    updateModalThemeIcons();
     elements.settingsModal.style.display = 'flex';
 }
 
@@ -498,48 +560,541 @@ function saveSettings() {
 }
 
 /* ==========================================================
-   AI Summarization
+   Translation (On-Demand - Free Google Translate)
    ========================================================== */
-async function handleSummarize() {
-    if (!state.transcript || !state.transcript.items || state.transcript.items.length === 0) return;
-
-    const provider = localStorage.getItem('transkript_ai_provider') || 'Gemini';
-    const apiKey = localStorage.getItem('transkript_ai_apikey') || '';
-
-    if (!apiKey) {
-        showAlert('Lütfen özetleme işlemi için Ayarlar menüsünden API anahtarınızı girin.', 'error');
-        openSettingsModal();
+async function handleTranscriptListClick(e) {
+    const btnRepeat = e.target.closest('.btn-repeat');
+    if (btnRepeat) {
+        e.stopPropagation();
+        const index = parseInt(btnRepeat.getAttribute('data-index'));
+        
+        if (state.repeatIndex === index) {
+            // Cancel repeat
+            state.repeatIndex = -1;
+            btnRepeat.classList.remove('active');
+        } else {
+            // Enable repeat
+            const prev = elements.transcriptList.querySelector('.btn-repeat.active');
+            if (prev) prev.classList.remove('active');
+            
+            state.repeatIndex = index;
+            btnRepeat.classList.add('active');
+            
+            // Seek to start of this item immediately
+            if (state.transcript && state.transcript.items[index]) {
+                seekVideoTo(state.transcript.items[index].offsetSeconds);
+            }
+        }
         return;
     }
 
-    elements.aiSummaryBox.style.display = 'block';
-    elements.aiSummaryContent.innerHTML = '<span style="color:var(--text-secondary);">Özet oluşturuluyor, lütfen bekleyin...</span>';
-    elements.summarizeBtn.disabled = true;
+    const btn = e.target.closest('.btn-translate');
+    if (!btn) {
+        // If it's not the translate button, it might be a click on the item to seek video
+        const itemEl = e.target.closest('.transcript-item');
+        if (itemEl && !e.target.closest('.translation-result')) {
+            seekVideoTo(parseFloat(itemEl.getAttribute('data-offset')));
+        }
+        return;
+    }
+
+    e.stopPropagation();
+
+    const itemWrapper = btn.closest('.item-content-wrapper');
+    let resultBox = itemWrapper.querySelector('.translation-result');
+
+    // Toggle if already exists
+    if (resultBox) {
+        resultBox.style.display = resultBox.style.display === 'none' ? 'block' : 'none';
+        return;
+    }
+
+    const textToTranslate = btn.getAttribute('data-text');
+    if (!textToTranslate) return;
+
+    // Create result box and show loading state
+    resultBox = document.createElement('div');
+    resultBox.className = 'translation-result';
+    resultBox.innerHTML = '<span style="opacity: 0.7;">Çevriliyor...</span>';
+    itemWrapper.appendChild(resultBox);
+    btn.style.opacity = '1';
+    btn.disabled = true;
 
     try {
-        const fullText = state.transcript.items.map(i => i.text).join(' ');
-
-        const res = await fetch('/api/transcript/summarize', {
+        const res = await fetch('/api/transcript/translate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                TranscriptText: fullText,
-                Provider: provider,
-                ApiKey: apiKey
+            body: JSON.stringify({
+                TextToTranslate: textToTranslate,
+                TargetLanguage: 'tr'
             })
         });
 
         const data = await res.json();
         if (!res.ok || !data.success) {
-            throw new Error(data.message || 'Özetleme işlemi başarısız oldu.');
+            throw new Error(data.message || 'Çeviri başarısız oldu.');
         }
 
-        elements.aiSummaryContent.innerHTML = escapeHtml(data.data);
+        resultBox.innerHTML = escapeHtml(data.data);
     } catch (err) {
-        console.error('AI Error:', err);
-        elements.aiSummaryContent.innerHTML = `<span style="color: #ef4444;">Hata: ${escapeHtml(err.message)}</span>`;
+        console.error('Translation Error:', err);
+        resultBox.innerHTML = `<span style="color: #ef4444;">Hata: ${escapeHtml(err.message)}</span>`;
     } finally {
-        elements.summarizeBtn.disabled = false;
+        btn.disabled = false;
+        btn.style.opacity = '';
+    }
+}
+
+/* ==========================================================
+   Word Meaning / Quick Dictionary Pop-up (Tasarım 1)
+   ========================================================== */
+let currentDictData = null;
+let currentAudioObj = null;
+
+function setupDictionaryEvents() {
+    // 1. Right Click (contextmenu) on transcript list
+    if (elements.transcriptList) {
+        elements.transcriptList.addEventListener('contextmenu', handleContextMenuLookup);
+    }
+
+    // 2. Close buttons & dismissal triggers
+    if (elements.dictCloseBtn) {
+        elements.dictCloseBtn.addEventListener('click', closeDictionaryTooltip);
+    }
+
+    // Dismiss on click outside
+    document.addEventListener('mousedown', (e) => {
+        if (elements.dictTooltip && elements.dictTooltip.style.display !== 'none' && !elements.dictTooltip.contains(e.target)) {
+            closeDictionaryTooltip();
+        }
+    });
+
+    // Dismiss on ESC key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && elements.dictTooltip && elements.dictTooltip.style.display !== 'none') {
+            closeDictionaryTooltip();
+        }
+    });
+
+    // 3. Audio Pronunciation Button
+    if (elements.dictSpeakBtn) {
+        elements.dictSpeakBtn.addEventListener('click', () => {
+            if (!currentDictData || !currentDictData.word) return;
+            speakWord(currentDictData.word, currentDictData.sourceLanguage || 'en', currentDictData.audioUrl);
+        });
+    }
+
+    // 4. Copy Translation Button
+    if (elements.dictCopyBtn) {
+        elements.dictCopyBtn.addEventListener('click', () => {
+            if (!currentDictData) return;
+            const textToCopy = `${currentDictData.word} → ${currentDictData.primaryTranslation}`;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const btnSpan = elements.dictCopyBtn.querySelector('span');
+                if (btnSpan) {
+                    const prev = btnSpan.textContent;
+                    btnSpan.textContent = 'Kopyalandı!';
+                    setTimeout(() => { btnSpan.textContent = prev; }, 1600);
+                }
+            }).catch(() => {
+                showToast('Panoya kopyalandı.');
+            });
+        });
+    }
+}
+
+function handleContextMenuLookup(e) {
+    if (!elements.transcriptList || !elements.transcriptList.contains(e.target)) return;
+
+    let targetWord = '';
+
+    // 1. Check if the user has actively selected text with the cursor
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+        const range = sel.getRangeAt(0);
+        if (elements.transcriptList.contains(range.commonAncestorContainer)) {
+            const selectedText = sel.toString().trim();
+            if (selectedText.length > 0 && selectedText.length < 80) {
+                targetWord = selectedText;
+            }
+        }
+    }
+
+    // 2. If no text selected, check if user clicked directly on a word token element
+    if (!targetWord) {
+        const wordEl = e.target.closest('.transcript-word');
+        if (wordEl) {
+            targetWord = wordEl.getAttribute('data-word') || wordEl.textContent || '';
+        }
+    }
+
+    // 3. Fallback: inspect caret coordinates and DOM text nodes
+    if (!targetWord) {
+        const transcriptItem = e.target.closest('.transcript-item');
+        if (transcriptItem) {
+            targetWord = getWordAtPoint(e.clientX, e.clientY);
+        }
+    }
+
+    // 4. Final fallback: extract nearest word from e.target textContent if inside transcript
+    if (!targetWord && e.target) {
+        const text = e.target.textContent || '';
+        const words = text.match(/[\p{L}\p{N}_'-]+/gu);
+        if (words && words.length === 1) {
+            targetWord = words[0];
+        }
+    }
+
+    if (targetWord && targetWord.trim().length > 0) {
+        // Clean outer punctuation and formatting quotes
+        const cleanWord = targetWord.trim().replace(/^['"\-.,!?;:()\[\]{}«»“”]+|['"\-.,!?;:()\[\]{}«»“”]+$/g, '');
+        if (cleanWord.length > 0) {
+            e.preventDefault(); // Prevent standard browser context menu
+            e.stopPropagation();
+            openDictionaryLookup(cleanWord, e.clientX, e.clientY);
+        }
+    }
+}
+
+function getWordAtPoint(x, y) {
+    let textNode = null;
+    let offset = 0;
+
+    // 1. Try caretPositionFromPoint (Standard / Firefox / Chrome 129+)
+    if (document.caretPositionFromPoint) {
+        try {
+            const pos = document.caretPositionFromPoint(x, y);
+            if (pos && pos.offsetNode) {
+                if (pos.offsetNode.nodeType === Node.TEXT_NODE) {
+                    textNode = pos.offsetNode;
+                    offset = pos.offset;
+                } else if (pos.offsetNode.nodeType === Node.ELEMENT_NODE) {
+                    const children = pos.offsetNode.childNodes;
+                    if (pos.offset < children.length && children[pos.offset].nodeType === Node.TEXT_NODE) {
+                        textNode = children[pos.offset];
+                        offset = 0;
+                    } else if (pos.offsetNode.firstChild && pos.offsetNode.firstChild.nodeType === Node.TEXT_NODE) {
+                        textNode = pos.offsetNode.firstChild;
+                        offset = 0;
+                    }
+                }
+            }
+        } catch (e) {}
+    }
+
+    // 2. Try caretRangeFromPoint (WebKit / Safari / Older Chromium)
+    if (!textNode && document.caretRangeFromPoint) {
+        try {
+            const range = document.caretRangeFromPoint(x, y);
+            if (range && range.startContainer) {
+                if (range.startContainer.nodeType === Node.TEXT_NODE) {
+                    textNode = range.startContainer;
+                    offset = range.startOffset;
+                } else if (range.startContainer.nodeType === Node.ELEMENT_NODE) {
+                    const children = range.startContainer.childNodes;
+                    if (range.startOffset < children.length && children[range.startOffset].nodeType === Node.TEXT_NODE) {
+                        textNode = children[range.startOffset];
+                        offset = 0;
+                    } else if (range.startContainer.firstChild && range.startContainer.firstChild.nodeType === Node.TEXT_NODE) {
+                        textNode = range.startContainer.firstChild;
+                        offset = 0;
+                    }
+                }
+            }
+        } catch (e) {}
+    }
+
+    if (!textNode || !textNode.textContent) return '';
+
+    const text = textNode.textContent;
+    if (offset < 0 || offset > text.length) return '';
+
+    let start = offset;
+    let end = offset;
+
+    // If offset is boundary/space, adjust start/end if adjacent is a word character
+    if (start >= text.length || !/[\p{L}\p{N}_'-]/u.test(text[start])) {
+        if (start > 0 && /[\p{L}\p{N}_'-]/u.test(text[start - 1])) {
+            start--;
+            end = start;
+        }
+    }
+
+    // Expand backwards across letters, numbers, apostrophes, hyphens
+    while (start > 0 && /[\p{L}\p{N}_'-]/u.test(text[start - 1])) {
+        start--;
+    }
+    // Expand forwards
+    while (end < text.length && /[\p{L}\p{N}_'-]/u.test(text[end])) {
+        end++;
+    }
+
+    return text.slice(start, end).trim();
+}
+
+async function openDictionaryLookup(word, x, y) {
+    if (!elements.dictTooltip) return;
+
+    elements.dictWord.textContent = word;
+    if (elements.dictPhonetic) {
+        elements.dictPhonetic.style.display = 'none';
+        elements.dictPhonetic.textContent = '';
+    }
+    elements.dictLangTag.textContent = 'EN → TR';
+    elements.dictBody.innerHTML = `
+        <div class="dict-skeleton">
+            <div class="dict-skeleton-line title"></div>
+            <div class="dict-skeleton-line badge"></div>
+            <div class="dict-skeleton-line"></div>
+            <div class="dict-skeleton-line short"></div>
+        </div>
+    `;
+
+    positionDictionaryTooltip(x, y);
+
+    try {
+        const res = await fetch('/api/dictionary/lookup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                Word: word,
+                TargetLanguage: 'tr'
+            })
+        });
+
+        const data = await res.json();
+        if (!res.ok || (data.success === false && data.message && !data.primaryTranslation)) {
+            throw new Error(data.message || 'Sözlükte anlam bulunamadı.');
+        }
+
+        currentDictData = data;
+        renderDictionaryData(data);
+        positionDictionaryTooltip(x, y);
+    } catch (err) {
+        console.error('Dictionary Lookup Error:', err);
+        elements.dictBody.innerHTML = `
+            <div style="padding: 1rem 0; color: #ef4444; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+                <span>❌</span>
+                <span>Anlam bulunamadı: ${escapeHtml(err.message)}</span>
+            </div>
+        `;
+        positionDictionaryTooltip(x, y);
+    }
+}
+
+function renderDictionaryData(data) {
+    elements.dictWord.textContent = data.word || '';
+    
+    // Phonetic Badge
+    if (elements.dictPhonetic) {
+        if (data.phonetic && data.phonetic.trim()) {
+            elements.dictPhonetic.textContent = data.phonetic.trim();
+            elements.dictPhonetic.style.display = 'inline-block';
+        } else {
+            elements.dictPhonetic.style.display = 'none';
+        }
+    }
+
+    const srcLang = (data.sourceLanguage || 'en').toUpperCase();
+    const tgtLang = (data.targetLanguage || 'tr').toUpperCase();
+    elements.dictLangTag.textContent = `${srcLang} → ${tgtLang}`;
+
+    let html = '';
+
+    // 1. Primary Translation Box (Large & Prominent)
+    if (data.primaryTranslation) {
+        html += `
+            <div class="dict-primary-box">
+                <div class="dict-primary-label">Türkçe Karşılığı</div>
+                <div class="dict-primary-text">${escapeHtml(data.primaryTranslation)}</div>
+                ${data.message ? `<div class="dict-root-hint">💡 ${escapeHtml(data.message)}</div>` : ''}
+            </div>
+        `;
+    }
+
+    // 2. Entries by Part of Speech
+    if (data.entries && data.entries.length > 0) {
+        data.entries.forEach(entry => {
+            const posTitle = entry.partOfSpeechTr || entry.partOfSpeech || 'Kelime';
+            const posKey = (entry.partOfSpeech || '').toLowerCase().replace(/[^a-z]/g, '');
+            const posTrKey = (entry.partOfSpeechTr || '').toLowerCase().replace(/[^a-zçğıöşü]/g, '');
+            const posBadgeClass = `dict-pos-badge pos-${posKey} pos-${posTrKey}`;
+
+            html += `
+                <div class="dict-pos-section">
+                    <div class="dict-pos-header">
+                        <span class="${posBadgeClass}">${escapeHtml(posTitle)}</span>
+                        ${entry.partOfSpeech && entry.partOfSpeech.toLowerCase() !== (entry.partOfSpeechTr || '').toLowerCase() ? `<span class="dict-pos-name-en">(${escapeHtml(entry.partOfSpeech)})</span>` : ''}
+                    </div>
+            `;
+
+            // Meanings / Turkish Equivalents
+            if (entry.meanings && entry.meanings.length > 0) {
+                html += `<div class="dict-meanings-wrap">`;
+                entry.meanings.forEach(m => {
+                    html += `<span class="dict-meaning-chip">${escapeHtml(m)}</span>`;
+                });
+                html += `</div>`;
+            }
+
+            // Definitions (English explanation + example)
+            if (entry.definitions && entry.definitions.length > 0) {
+                html += `<div class="dict-defs-wrap">`;
+                entry.definitions.forEach(def => {
+                    if (def.definition) {
+                        html += `
+                            <div class="dict-def-item">
+                                <div>${escapeHtml(def.definition)}</div>
+                                ${def.example ? `<div class="dict-def-example">"${escapeHtml(def.example)}"</div>` : ''}
+                            </div>
+                        `;
+                    }
+                });
+                html += `</div>`;
+            }
+
+            // Synonyms
+            if (entry.synonyms && entry.synonyms.length > 0) {
+                html += `
+                    <div class="dict-synonyms-wrap">
+                        <span class="dict-syn-label">Eş Anlamlı:</span>
+                        ${entry.synonyms.map(s => `<span class="dict-syn-chip">${escapeHtml(s)}</span>`).join('')}
+                    </div>
+                `;
+            }
+
+            html += `</div>`;
+        });
+    }
+
+    // 3. Context Examples
+    if (data.examples && data.examples.length > 0) {
+        html += `
+            <div class="dict-examples-box">
+                <div class="dict-examples-title">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    Örnek Cümleler
+                </div>
+                ${data.examples.map(ex => `<div class="dict-example-item">• ${highlightWordInExample(ex, data.word)}</div>`).join('')}
+            </div>
+        `;
+    }
+
+    elements.dictBody.innerHTML = html;
+}
+
+function highlightWordInExample(sentence, word) {
+    if (!word || !sentence) return escapeHtml(sentence);
+    const escapedSent = escapeHtml(sentence);
+    const reg = new RegExp(`\\b(${escapeRegExp(word)})\\b`, 'gi');
+    return escapedSent.replace(reg, '<mark>$1</mark>');
+}
+
+function positionDictionaryTooltip(x, y) {
+    const tooltip = elements.dictTooltip;
+    if (!tooltip) return;
+
+    tooltip.style.visibility = 'hidden';
+    tooltip.style.display = 'flex';
+
+    // Measure element
+    const rect = tooltip.getBoundingClientRect();
+    const width = rect.width || 560;
+    const height = rect.height || 420;
+
+    const margin = 16;
+    let left = x + 14;
+    let top = y + 14;
+
+    // Check right overflow
+    if (left + width > window.innerWidth - margin) {
+        left = x - width - 14;
+    }
+    // Check left overflow
+    if (left < margin) {
+        left = margin;
+    }
+
+    // Check bottom overflow
+    if (top + height > window.innerHeight - margin) {
+        top = y - height - 14;
+    }
+    // Check top overflow
+    if (top < margin) {
+        top = margin;
+    }
+
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+    tooltip.style.visibility = 'visible';
+}
+
+function closeDictionaryTooltip() {
+    if (elements.dictTooltip) {
+        elements.dictTooltip.style.display = 'none';
+    }
+    if (currentAudioObj) {
+        try { currentAudioObj.pause(); } catch(e) {}
+        currentAudioObj = null;
+    }
+    if (elements.dictSpeakBtn) {
+        elements.dictSpeakBtn.classList.remove('playing');
+    }
+    currentDictData = null;
+}
+
+function speakWord(text, lang = 'en', audioUrl = null) {
+    if (elements.dictSpeakBtn) {
+        elements.dictSpeakBtn.classList.add('playing');
+    }
+
+    // 1. If human recording audioUrl exists, try playing it
+    if (audioUrl && audioUrl.startsWith('http')) {
+        try {
+            if (currentAudioObj) {
+                currentAudioObj.pause();
+            }
+            currentAudioObj = new Audio(audioUrl);
+            currentAudioObj.play().then(() => {
+                currentAudioObj.onended = () => {
+                    if (elements.dictSpeakBtn) elements.dictSpeakBtn.classList.remove('playing');
+                };
+            }).catch(() => {
+                // Fallback to Web Speech Synthesis
+                playSpeechSynthesis(text, lang);
+            });
+            return;
+        } catch (e) {
+            // Fallback to SpeechSynthesis
+        }
+    }
+
+    playSpeechSynthesis(text, lang);
+}
+
+function playSpeechSynthesis(text, lang = 'en') {
+    if (!('speechSynthesis' in window)) {
+        if (elements.dictSpeakBtn) elements.dictSpeakBtn.classList.remove('playing');
+        return;
+    }
+
+    try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang.toLowerCase() === 'tr' ? 'tr-TR' : 'en-US';
+        utterance.rate = 0.9;
+        
+        utterance.onend = () => {
+            if (elements.dictSpeakBtn) elements.dictSpeakBtn.classList.remove('playing');
+        };
+        utterance.onerror = () => {
+            if (elements.dictSpeakBtn) elements.dictSpeakBtn.classList.remove('playing');
+        };
+
+        window.speechSynthesis.speak(utterance);
+    } catch (e) {
+        console.warn('Speech synthesis error:', e);
+        if (elements.dictSpeakBtn) elements.dictSpeakBtn.classList.remove('playing');
     }
 }
 
@@ -639,8 +1194,8 @@ async function loadVideoAndTranscript(url) {
         mountYouTubePlayer(state.metadata.id);
 
         // Display workspace
+        document.body.classList.add('video-active');
         elements.workspaceSection.style.display = 'grid';
-        elements.workspaceSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
         // 2. Fetch Transcript
         await fetchTranscriptForLanguage(url);
@@ -668,11 +1223,6 @@ function resetTranscriptState() {
         </div>
     `;
     elements.itemCountBadge.textContent = 'Yükleniyor...';
-
-    // Hide AI elements
-    elements.summarizeBtn.style.display = 'none';
-    elements.aiSummaryBox.style.display = 'none';
-    elements.aiSummaryContent.innerHTML = '';
 
     // Hide bottom export buttons
     elements.transcriptFooter.style.display = 'none';
@@ -735,7 +1285,6 @@ async function fetchTranscriptForLanguage(url, langCode = null, isAuto = null) {
 
         // Show export footer and render items
         elements.transcriptFooter.style.display = 'block';
-        elements.summarizeBtn.style.display = 'flex';
         renderTranscriptItems();
         startSyncLoop();
 
@@ -795,21 +1344,20 @@ function renderTranscriptItems() {
         itemEl.setAttribute('data-index', index);
         itemEl.setAttribute('data-offset', item.offsetSeconds);
 
-        let displayText = escapeHtml(text);
-        if (query) {
-            const regex = new RegExp(`(${escapeRegExp(query)})`, 'gi');
-            displayText = displayText.replace(regex, '<mark class="search-hit">$1</mark>');
-        }
+        const formattedContent = formatTranscriptWords(text, query);
 
         itemEl.innerHTML = `
             <span class="item-timestamp">${item.timestampFormatted}</span>
-            <span class="item-text">${displayText}</span>
+            <div class="item-content-wrapper" style="flex: 1; display: flex; flex-direction: column;">
+                <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem;">
+                    <span class="item-text" style="flex: 1;">${formattedContent}</span>
+                    <div style="display: flex; gap: 0.25rem;">
+                        <button class="btn-translate" title="Türkçeye Çevir" data-text="${escapeHtml(text)}">🌐</button>
+                        <button class="btn-repeat ${index === state.repeatIndex ? 'active' : ''}" title="Sürekli Tekrarla" data-index="${index}">🔁</button>
+                    </div>
+                </div>
+            </div>
         `;
-
-        // Click to seek video to timestamp
-        itemEl.addEventListener('click', () => {
-            seekVideoTo(item.offsetSeconds);
-        });
 
         elements.transcriptList.appendChild(itemEl);
     });
@@ -817,6 +1365,29 @@ function renderTranscriptItems() {
     elements.itemCountBadge.textContent = query 
         ? `${matchCount} / ${items.length} sonuç` 
         : `${items.length} satır`;
+}
+
+function formatTranscriptWords(text, query) {
+    if (!text) return '';
+
+    // Split text into word tokens and delimiters (whitespace, punctuation)
+    const tokens = text.split(/([^\p{L}\p{N}_'-]+)/u);
+    return tokens.map(token => {
+        if (!token) return '';
+        // If delimiter (spaces, punctuation)
+        if (!/[\p{L}\p{N}]/u.test(token)) {
+            return escapeHtml(token);
+        }
+
+        let innerContent = escapeHtml(token);
+        if (query && !query.includes(' ')) {
+            const regex = new RegExp(`(${escapeRegExp(query)})`, 'gi');
+            innerContent = innerContent.replace(regex, '<mark class="search-hit">$1</mark>');
+        }
+
+        const cleanWord = token.replace(/^['"\-.,!?;:()\[\]{}«»“”]+|['"\-.,!?;:()\[\]{}«»“”]+$/g, '');
+        return `<span class="transcript-word" data-word="${escapeHtml(cleanWord)}">${innerContent}</span>`;
+    }).join('');
 }
 
 /* ==========================================================
@@ -951,6 +1522,20 @@ function syncTranscriptWithPlayback() {
         state.activeItemIndex = foundIndex;
         updateActiveItemHighlight(foundIndex);
     }
+    
+    // Handle Single Line Repeat Logic
+    if (state.repeatIndex !== -1 && items[state.repeatIndex]) {
+        const repeatItem = items[state.repeatIndex];
+        const nextItem = items[state.repeatIndex + 1];
+        const start = repeatItem.offsetSeconds;
+        // Default to item duration, or use next item's start time if available
+        const end = nextItem ? nextItem.offsetSeconds : (start + repeatItem.durationSeconds);
+        
+        // If we reached or passed the end of the line (or seeked far away manually), loop back to start
+        if (currentTime >= end || currentTime < start - 1.0) {
+            seekVideoTo(start);
+        }
+    }
 }
 
 function updateActiveItemHighlight(activeIndex) {
@@ -969,7 +1554,7 @@ function updateActiveItemHighlight(activeIndex) {
         if (elements.autoScrollToggle.checked) {
             newActive.scrollIntoView({
                 behavior: 'smooth',
-                block: 'nearest'
+                block: 'center'
             });
         }
     }

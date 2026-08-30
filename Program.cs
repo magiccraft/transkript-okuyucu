@@ -23,6 +23,7 @@ builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IYouTubeTranscriptService, YouTubeTranscriptService>();
 builder.Services.AddSingleton<IDocxExportService, DocxExportService>();
+builder.Services.AddSingleton<IDictionaryService, DictionaryService>();
 
 // Enable CORS for local development if needed
 builder.Services.AddCors(options =>
@@ -212,7 +213,7 @@ app.MapPost("/api/transcript/summarize", async (SummarizeRequest request, HttpCl
             };
 
             var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-            var response = await httpClient.PostAsync($"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={request.ApiKey}", content);
+            var response = await httpClient.PostAsync($"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={request.ApiKey.Trim()}", content);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -235,6 +236,80 @@ app.MapPost("/api/transcript/summarize", async (SummarizeRequest request, HttpCl
     catch (Exception ex)
     {
         return Results.BadRequest(new { success = false, message = "Özetleme işlemi sırasında bir hata oluştu: " + ex.Message });
+    }
+});
+
+// API: Translate Transcript Line (MyMemory API)
+app.MapPost("/api/transcript/translate", async (TranslateRequest request, HttpClient httpClient, IConfiguration config) =>
+{
+    try
+    {
+        if (string.IsNullOrWhiteSpace(request.TextToTranslate))
+        {
+            return Results.BadRequest(new { success = false, message = "Çevrilecek metin bulunamadı." });
+        }
+
+        var targetLang = string.IsNullOrWhiteSpace(request.TargetLanguage) ? "tr" : request.TargetLanguage;
+        var encodedText = Uri.EscapeDataString(request.TextToTranslate);
+        
+        var email = config.GetValue<string>("TranslationConfig:Email");
+        var deParam = string.IsNullOrWhiteSpace(email) ? "" : $"&de={email}";
+        
+        var url = $"https://api.mymemory.translated.net/get?q={encodedText}&langpair=autodetect|{targetLang}{deParam}";
+
+        using var requestMessage = new HttpRequestMessage(HttpMethod.Get, url);
+        requestMessage.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+
+        var response = await httpClient.SendAsync(requestMessage);
+        if (!response.IsSuccessStatusCode)
+        {
+            return Results.BadRequest(new { success = false, message = "Çeviri servisine ulaşılamadı." });
+        }
+
+        var json = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+        
+        var translatedText = string.Empty;
+        
+        if (doc.RootElement.TryGetProperty("responseData", out var responseData) && 
+            responseData.TryGetProperty("translatedText", out var translatedTextElement))
+        {
+            translatedText = translatedTextElement.GetString();
+        }
+
+        if (string.IsNullOrWhiteSpace(translatedText))
+        {
+            translatedText = request.TextToTranslate;
+        }
+
+        return Results.Ok(new { success = true, data = translatedText });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { success = false, message = "Çeviri işlemi sırasında bir hata oluştu: " + ex.Message });
+    }
+});
+
+// API: Word / Term Dictionary Lookup (Meaning, Part of Speech, Definitions, Examples)
+app.MapPost("/api/dictionary/lookup", async (DictionaryLookupRequest request, IDictionaryService dictionaryService) =>
+{
+    try
+    {
+        if (string.IsNullOrWhiteSpace(request.Word))
+        {
+            return Results.BadRequest(new { success = false, message = "Lütfen sorgulanacak bir kelime girin." });
+        }
+
+        var result = await dictionaryService.LookupWordAsync(request.Word, request.ApiKey, request.TargetLanguage ?? "tr");
+        return Results.Ok(result);
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(new { success = false, message = ex.Message });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { success = false, message = "Sözlük sorgusu sırasında bir hata oluştu: " + ex.Message });
     }
 });
 
