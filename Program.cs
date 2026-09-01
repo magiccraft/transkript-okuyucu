@@ -1,10 +1,11 @@
-using System.Text.RegularExpressions;
-using System.Text;
-using System.Text.Json;
-using System.Net.Http.Headers;
 using System.Diagnostics;
-using TranskriptOkuyucu.Models;
+using TranskriptOkuyucu.Common;
+using TranskriptOkuyucu.Endpoints;
 using TranskriptOkuyucu.Services;
+
+using Serilog;
+using FluentValidation;
+using Microsoft.Extensions.Http.Resilience;
 
 var options = new WebApplicationOptions
 {
@@ -16,19 +17,61 @@ var options = new WebApplicationOptions
 };
 
 var builder = WebApplication.CreateBuilder(options);
-builder.WebHost.UseUrls("http://localhost:5240");
 
-// Add services
-builder.Services.AddMemoryCache();
+// Configure Serilog
+builder.Host.UseSerilog((context, loggerConfiguration) => 
+    loggerConfiguration.WriteTo.Console()
+                       .Enrich.FromLogContext());
+
+// Register FluentValidation
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
+// Port Configuration (Defaults to 5241 unless overridden by environment)
+var configuredUrl = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") 
+    ?? builder.Configuration["Urls"] 
+    ?? "http://localhost:5241";
+builder.WebHost.UseUrls(configuredUrl);
+
+// Register Global Exception Handler
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
+
+// Register Core Services with Memory Constraints
+builder.Services.AddMemoryCache(cacheOptions =>
+{
+    cacheOptions.SizeLimit = builder.Configuration.GetValue<long>("Cache:SizeLimit", 500000);
+    cacheOptions.CompactionPercentage = builder.Configuration.GetValue<double>("Cache:CompactionPercentage", 0.20);
+    cacheOptions.ExpirationScanFrequency = TimeSpan.FromMinutes(builder.Configuration.GetValue<int>("Cache:ExpirationScanMinutes", 3));
+});
+builder.Services.AddResponseCompression();
 builder.Services.AddHttpClient();
-builder.Services.AddSingleton<IYouTubeTranscriptService, YouTubeTranscriptService>();
+
+// Register Infrastructure & Concurrency Lock
+builder.Services.AddSingleton<KeyedLock>();
+
+// Register Application & Domain Services
+builder.Services.AddSingleton<IEnglishLemmatizer, EnglishLemmatizer>();
+builder.Services.AddSingleton<ILocalDictionaryRepository, LocalDictionaryRepository>();
+builder.Services.AddHttpClient<IDictionaryApiClient, DictionaryApiClient>(client =>
+{
+    var dictConfig = builder.Configuration.GetSection("DictionaryApi");
+    var baseUrl = dictConfig["BaseUrl"] ?? "https://api.dictionaryapi.dev/api/v2/entries/en/";
+    var userAgent = dictConfig["UserAgent"] ?? "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
+    
+    client.BaseAddress = new Uri(baseUrl);
+    client.DefaultRequestHeaders.Add("User-Agent", userAgent);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+}).AddStandardResilienceHandler();
+
+builder.Services.AddHttpClient<ITranslationService, TranslationService>().AddStandardResilienceHandler();
+builder.Services.AddHttpClient<IYouTubeTranscriptService, YouTubeTranscriptService>().AddStandardResilienceHandler();
 builder.Services.AddSingleton<IDocxExportService, DocxExportService>();
 builder.Services.AddSingleton<IDictionaryService, DictionaryService>();
 
-// Enable CORS for local development if needed
-builder.Services.AddCors(options =>
+// Enable CORS for local access
+builder.Services.AddCors(corsOptions =>
 {
-    options.AddDefaultPolicy(policy =>
+    corsOptions.AddDefaultPolicy(policy =>
     {
         policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
     });
@@ -36,19 +79,26 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+app.UseExceptionHandler();
+
+app.UseResponseCompression();
 app.UseCors();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-// Auto-open browser & friendly console banner on startup
+// Register Modular Endpoints
+app.MapTranscriptEndpoints();
+app.MapDictionaryEndpoints();
+
+// Friendly Console Banner & Auto-open Browser
 app.Lifetime.ApplicationStarted.Register(() =>
 {
-    const string appUrl = "http://localhost:5240";
+    var appUrl = configuredUrl.Split(';').FirstOrDefault() ?? "http://localhost:5241";
     Console.ForegroundColor = ConsoleColor.Cyan;
     Console.WriteLine();
     Console.WriteLine("╔══════════════════════════════════════════════════════════════╗");
     Console.WriteLine("║   🎬 YouTube Transkript Okuyucu Başarıyla Başlatıldı!        ║");
-    Console.WriteLine("║   👉 Tarayıcınızda açın: http://localhost:5240               ║");
+    Console.WriteLine($"║   👉 Tarayıcınızda açın: {appUrl,-36}║");
     Console.WriteLine("║   💡 Kapatmak için: Ctrl + C tuşlarına basın.                ║");
     Console.WriteLine("╚══════════════════════════════════════════════════════════════╝");
     Console.WriteLine();
@@ -71,245 +121,7 @@ app.Lifetime.ApplicationStarted.Register(() =>
     }
     catch
     {
-        // Browser open is a convenience, safe to ignore on failure
-    }
-});
-
-// API: Get Video Info & Available Caption Tracks
-app.MapPost("/api/video/info", async (VideoInfoRequest request, IYouTubeTranscriptService transcriptService) =>
-{
-    try
-    {
-        if (string.IsNullOrWhiteSpace(request.Url))
-        {
-            return Results.BadRequest(new { success = false, message = "Lütfen bir YouTube video linki girin." });
-        }
-
-        var metadata = await transcriptService.GetVideoMetadataAsync(request.Url);
-        return Results.Ok(new { success = true, data = metadata });
-    }
-    catch (ArgumentException ex)
-    {
-        return Results.BadRequest(new { success = false, message = ex.Message });
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(new { success = false, message = "Video bilgileri alınırken hata oluştu: " + ex.Message });
-    }
-});
-
-// API: Fetch Transcript for Video & Language
-app.MapPost("/api/transcript/fetch", async (TranscriptFetchRequest request, IYouTubeTranscriptService transcriptService) =>
-{
-    try
-    {
-        if (string.IsNullOrWhiteSpace(request.Url))
-        {
-            return Results.BadRequest(new { success = false, message = "Lütfen bir YouTube video linki girin." });
-        }
-
-        var transcript = await transcriptService.GetTranscriptAsync(request.Url, request.LanguageCode, request.IsAutoGenerated);
-        return Results.Ok(new { success = true, data = transcript });
-    }
-    catch (ArgumentException ex)
-    {
-        return Results.BadRequest(new { success = false, message = ex.Message });
-    }
-    catch (InvalidOperationException ex)
-    {
-        return Results.NotFound(new { success = false, message = ex.Message });
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(new { success = false, message = "Transkript alınırken hata oluştu: " + ex.Message });
-    }
-});
-
-// API: Export Transcript to Word (.docx)
-app.MapPost("/api/transcript/export-docx", (ExportDocxRequest request, IDocxExportService docxService) =>
-{
-    try
-    {
-        if (request.Items == null || request.Items.Count == 0)
-        {
-            return Results.BadRequest(new { success = false, message = "Dışa aktarılacak transkript verisi bulunamadı." });
-        }
-
-        var docxBytes = docxService.GenerateDocx(request);
-        
-        // Sanitize file name
-        var safeTitle = string.Join("_", (request.Title ?? "Transkript").Split(Path.GetInvalidFileNameChars()));
-        if (safeTitle.Length > 50) safeTitle = safeTitle[..50];
-        var fileName = $"{safeTitle}_transkript.docx";
-
-        return Results.File(
-            docxBytes,
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            fileName
-        );
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(new { success = false, message = "Word dosyası oluşturulurken bir hata oluştu: " + ex.Message });
-    }
-});
-
-// API: Summarize Transcript using Gemini API
-app.MapPost("/api/transcript/summarize", async (SummarizeRequest request, HttpClient httpClient) =>
-{
-    try
-    {
-        if (string.IsNullOrWhiteSpace(request.ApiKey))
-        {
-            return Results.BadRequest(new { success = false, message = "API Anahtarı eksik." });
-        }
-
-        if (string.IsNullOrWhiteSpace(request.TranscriptText))
-        {
-            return Results.BadRequest(new { success = false, message = "Özetlenecek metin bulunamadı." });
-        }
-
-        var prompt = "Aşağıdaki video transkriptini okuyarak ana fikirleri ve en önemli noktaları içeren, okunması kolay, maddeler halinde ve profesyonel bir dille Türkçe bir özet çıkar:\n\n" + request.TranscriptText;
-
-        if (request.Provider == "OpenAI")
-        {
-            var requestBody = new
-            {
-                model = "gpt-4o-mini",
-                messages = new[] { new { role = "user", content = prompt } }
-            };
-
-            var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-            var requestMsg = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/chat/completions");
-            requestMsg.Headers.Authorization = new AuthenticationHeaderValue("Bearer", request.ApiKey);
-            requestMsg.Content = content;
-
-            var response = await httpClient.SendAsync(requestMsg);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                return Results.BadRequest(new { success = false, message = "OpenAI servisinden hata alındı." });
-            }
-
-            var jsonResponse = await response.Content.ReadAsStringAsync();
-            using var doc = JsonDocument.Parse(jsonResponse);
-            var summaryText = doc.RootElement
-                .GetProperty("choices")[0]
-                .GetProperty("message")
-                .GetProperty("content")
-                .GetString();
-
-            return Results.Ok(new { success = true, data = summaryText });
-        }
-        else // Default to Gemini
-        {
-            var requestBody = new
-            {
-                contents = new[]
-                {
-                    new { parts = new[] { new { text = prompt } } }
-                }
-            };
-
-            var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-            var response = await httpClient.PostAsync($"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={request.ApiKey.Trim()}", content);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                return Results.BadRequest(new { success = false, message = "Gemini servisinden hata alındı." });
-            }
-
-            var jsonResponse = await response.Content.ReadAsStringAsync();
-            using var doc = JsonDocument.Parse(jsonResponse);
-            var summaryText = doc.RootElement
-                .GetProperty("candidates")[0]
-                .GetProperty("content")
-                .GetProperty("parts")[0]
-                .GetProperty("text")
-                .GetString();
-
-            return Results.Ok(new { success = true, data = summaryText });
-        }
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(new { success = false, message = "Özetleme işlemi sırasında bir hata oluştu: " + ex.Message });
-    }
-});
-
-// API: Translate Transcript Line (MyMemory API)
-app.MapPost("/api/transcript/translate", async (TranslateRequest request, HttpClient httpClient, IConfiguration config) =>
-{
-    try
-    {
-        if (string.IsNullOrWhiteSpace(request.TextToTranslate))
-        {
-            return Results.BadRequest(new { success = false, message = "Çevrilecek metin bulunamadı." });
-        }
-
-        var targetLang = string.IsNullOrWhiteSpace(request.TargetLanguage) ? "tr" : request.TargetLanguage;
-        var encodedText = Uri.EscapeDataString(request.TextToTranslate);
-        
-        var email = config.GetValue<string>("TranslationConfig:Email");
-        var deParam = string.IsNullOrWhiteSpace(email) ? "" : $"&de={email}";
-        
-        var url = $"https://api.mymemory.translated.net/get?q={encodedText}&langpair=autodetect|{targetLang}{deParam}";
-
-        using var requestMessage = new HttpRequestMessage(HttpMethod.Get, url);
-        requestMessage.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
-
-        var response = await httpClient.SendAsync(requestMessage);
-        if (!response.IsSuccessStatusCode)
-        {
-            return Results.BadRequest(new { success = false, message = "Çeviri servisine ulaşılamadı." });
-        }
-
-        var json = await response.Content.ReadAsStringAsync();
-        using var doc = JsonDocument.Parse(json);
-        
-        var translatedText = string.Empty;
-        
-        if (doc.RootElement.TryGetProperty("responseData", out var responseData) && 
-            responseData.TryGetProperty("translatedText", out var translatedTextElement))
-        {
-            translatedText = translatedTextElement.GetString();
-        }
-
-        if (string.IsNullOrWhiteSpace(translatedText))
-        {
-            translatedText = request.TextToTranslate;
-        }
-
-        return Results.Ok(new { success = true, data = translatedText });
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(new { success = false, message = "Çeviri işlemi sırasında bir hata oluştu: " + ex.Message });
-    }
-});
-
-// API: Word / Term Dictionary Lookup (Meaning, Part of Speech, Definitions, Examples)
-app.MapPost("/api/dictionary/lookup", async (DictionaryLookupRequest request, IDictionaryService dictionaryService) =>
-{
-    try
-    {
-        if (string.IsNullOrWhiteSpace(request.Word))
-        {
-            return Results.BadRequest(new { success = false, message = "Lütfen sorgulanacak bir kelime girin." });
-        }
-
-        var result = await dictionaryService.LookupWordAsync(request.Word, request.ApiKey, request.TargetLanguage ?? "tr");
-        return Results.Ok(result);
-    }
-    catch (ArgumentException ex)
-    {
-        return Results.BadRequest(new { success = false, message = ex.Message });
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(new { success = false, message = "Sözlük sorgusu sırasında bir hata oluştu: " + ex.Message });
+        // Browser opening failure is non-fatal
     }
 });
 

@@ -1,7 +1,7 @@
-using TranskriptOkuyucu.Models;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
+using TranskriptOkuyucu.Models.Transcript;
 
 namespace TranskriptOkuyucu.Services;
 
@@ -36,7 +36,7 @@ public class DocxExportService : IDocxExportService
             }
             body.Append(CreateSimpleParagraph($"Tarih: {DateTime.Now:dd.MM.yyyy HH:mm}"));
             body.Append(CreateSimpleParagraph(new string('=', 56)));
-            
+
             body.Append(CreateSpacer(200));
 
             foreach (var item in request.Items)

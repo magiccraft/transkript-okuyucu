@@ -10,150 +10,22 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=2.1">
+    <link rel="stylesheet" href="css/style.css?v=2.6">
     <!-- Favicon -->
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%20100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E🎬%3C/text%3E%3C/svg%3E">
-    <style>
-        .ai-summary-box {
-            background-color: var(--bg-card, #1e1e1e);
-            border: 1px solid var(--border-color, #333);
-            border-radius: 8px;
-            margin: 10px;
-            padding: 15px;
-            display: none;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .ai-summary-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            border-bottom: 1px solid var(--border-color, #333);
-            padding-bottom: 10px;
-        }
-
-        .ai-summary-header h4 {
-            margin: 0;
-            color: var(--primary-color, #a855f7);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .ai-summary-content {
-            font-size: 0.95rem;
-            line-height: 1.6;
-            color: var(--text-secondary, #ccc);
-            white-space: pre-wrap;
-        }
-
-        .btn-summarize {
-            background: linear-gradient(135deg, #a855f7, #ec4899);
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-weight: 500;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: opacity 0.2s;
-            font-size: 0.9rem;
-        }
-
-        .btn-summarize:hover {
-            opacity: 0.9;
-        }
-
-        .btn-summarize:active {
-            transform: scale(0.97);
-        }
-
-        .btn-summarize:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(4px);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-content {
-            background: var(--bg-card, #1e1e1e);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color, #333);
-            border-radius: 12px;
-            width: 90%;
-            max-width: 400px;
-            padding: 20px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .modal-header h3 {
-            margin: 0;
-            font-size: 1.2rem;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-        }
-    </style>
 </head>
 
 <body>
     <!-- Background subtle gradient glow -->
     <div class="bg-glow"></div>
 
-    <header class="app-header">
-        <div class="header-container">
-            <div class="brand">
-                <div class="brand-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                        <line x1="9" y1="10" x2="15" y2="10"></line>
-                        <line x1="12" y1="7" x2="12" y2="13"></line>
-                    </svg>
-                </div>
-                <div class="brand-text">
-                    <h1>Transkript<b>Okuyucu</b></h1>
-                </div>
-            </div>
 
-            <div class="header-actions">
-            </div>
-        </div>
-    </header>
 
     <main class="app-main">
         <!-- Input & Search Section -->
         <section class="hero-section">
-            <h2 class="hero-title">YouTube Transkript Okuyucu</h2>
-            <p class="hero-subtitle">Videonun linkini yapıştırın, canlı eşzamanlı takip edin ve zaman damgalı Word
-                belgesi olarak anında indirin.</p>
+
 
             <form id="urlForm" class="url-input-card">
                 <div class="input-wrapper">
@@ -179,17 +51,27 @@
                     </svg>
                 </button>
                 <div style="width: 1px; height: 32px; background: var(--border-color); margin: 0 4px;"></div>
-                <button type="button" id="settingsBtnTranscript" class="btn-icon" title="Yapay Zeka Ayarları" aria-label="Ayarlar">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="3"></circle>
-                        <path
-                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
-                        </path>
+                <button type="button" id="historyBtn" class="btn-icon" title="İzleme Geçmişim" aria-label="İzleme Geçmişim">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                </button>
+                <button type="button" id="vocabListBtn" class="btn-icon" title="Kelime Defterim" aria-label="Kelime Defterim">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                </button>
+                <button type="button" id="shortcutsBtnTranscript" class="btn-icon" title="Klavye Kısayolları (?)" aria-label="Klavye Kısayolları">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
                     </svg>
                 </button>
                 <button type="button" id="themeToggleTranscript" class="btn-icon" title="Temayı Değiştir" aria-label="Temayı Değiştir">
-                    <svg class="theme-icon sun" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    <svg class="theme-icon sun" width="19" height="19" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="5"></circle>
                         <line x1="12" y1="1" x2="12" y2="3"></line>
@@ -201,7 +83,7 @@
                         <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
                         <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
                     </svg>
-                    <svg class="theme-icon moon" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    <svg class="theme-icon moon" width="19" height="19" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                     </svg>
@@ -216,189 +98,154 @@
             <button class="alert-close" aria-label="Kapat">&times;</button>
         </div>
 
-        <!-- Settings Modal -->
-        <div id="settingsModal" class="modal-overlay" style="display: none;">
+        <!-- Shortcuts Modal (1.e) -->
+        <div id="shortcutsModal" class="modal-overlay" style="display: none;">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3>⚙️ Ayarlar</h3>
-                    <button id="closeSettingsBtn" class="btn-clear">&times;</button>
+                    <h3>⌨️ Klavye ve Fare Kısayolları</h3>
+                    <button id="closeShortcutsBtn" class="btn-clear">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 15px;">Yapay zeka özellikleri ve API
-                        kullanımı için sağlayıcınızı seçin ve API anahtarınızı girin. Bu anahtar sadece tarayıcınızda saklanır.</p>
-                    <div class="form-group">
-                        <label for="aiProviderSelect">Sağlayıcı (Provider)</label>
-                        <select id="aiProviderSelect" class="lang-select"
-                            style="width: 100%; margin-bottom: 15px; padding: 8px; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px;">
-                            <option value="Gemini">Google Gemini (gemini-2.5-flash)</option>
-                            <option value="OpenAI">OpenAI (gpt-4o-mini)</option>
-                        </select>
+                    <div class="shortcuts-grid">
+                        <div class="shortcut-row">
+                            <span class="shortcut-desc">Oynat / Duraklat</span>
+                            <div class="shortcut-keys"><span class="shortcut-key">Boşluk</span> <span class="shortcut-key">k</span></div>
+                        </div>
+                        <div class="shortcut-row">
+                            <span class="shortcut-desc">10sn Geri / İleri Sar</span>
+                            <div class="shortcut-keys"><span class="shortcut-key">←</span> <span class="shortcut-key">→</span> veya <span class="shortcut-key">j</span> <span class="shortcut-key">l</span></div>
+                        </div>
+                        <div class="shortcut-row">
+                            <span class="shortcut-desc">Sesi Kapat / Aç</span>
+                            <div class="shortcut-keys"><span class="shortcut-key">m</span></div>
+                        </div>
+                        <div class="shortcut-row">
+                            <span class="shortcut-desc">Tam Ekran</span>
+                            <div class="shortcut-keys"><span class="shortcut-key">f</span></div>
+                        </div>
+                        <div class="shortcut-row">
+                            <span class="shortcut-desc">Sözlükte Kelime Anlamı</span>
+                            <div class="shortcut-keys"><span class="shortcut-key">Sağ Tık</span> veya <span class="shortcut-key">Çift Tık</span></div>
+                        </div>
+                        <div class="shortcut-row">
+                            <span class="shortcut-desc">Arama Eşleşmeleri Gezintisi</span>
+                            <div class="shortcut-keys"><span class="shortcut-key">Enter</span> <span class="shortcut-key">Shift + Enter</span></div>
+                        </div>
+                        <div class="shortcut-row">
+                            <span class="shortcut-desc">Oto-kaydırmayı Aç/Kapat</span>
+                            <div class="shortcut-keys"><span class="shortcut-key">Cmd + Shift + S</span> / <span class="shortcut-key">Ctrl + Shift + S</span></div>
+                        </div>
+                        <div class="shortcut-row">
+                            <span class="shortcut-desc">Zen Modu (Okuma Modu)</span>
+                            <div class="shortcut-keys"><span class="shortcut-key">Cmd + Shift + Z</span> / <span class="shortcut-key">Ctrl + Shift + Z</span></div>
+                        </div>
+                        <div class="shortcut-row">
+                            <span class="shortcut-desc">Kısayol Menüsünü Aç</span>
+                            <div class="shortcut-keys"><span class="shortcut-key">?</span></div>
+                        </div>
+                        <div class="shortcut-row">
+                            <span class="shortcut-desc">Pencereleri Kapat</span>
+                            <div class="shortcut-keys"><span class="shortcut-key">ESC</span></div>
+                        </div>
                     </div>
-                    <div class="form-group" style="margin-bottom: 15px;">
-                        <label for="aiApiKeyInput">API Anahtarı</label>
-                        <input type="password" id="aiApiKeyInput" placeholder="API Key..."
-                            style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary);" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Vocab List Modal -->
+        <div id="vocabModal" class="modal-overlay" style="display: none;">
+            <div id="vocabModalContent" class="modal-content modal-lg modal-row" style="transition: max-width 0.3s ease;">
+                <!-- Main Vocab Panel -->
+                <div style="flex: 1; display: flex; flex-direction: column; min-width: 0;">
+                    <div class="modal-header">
+                        <h3 style="display: flex; align-items: center; gap: 8px;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                            </svg>
+                            Kelime Defterim (<span id="vocabCount">0</span>)
+                        </h3>
+                        <button id="closeVocabBtn" class="btn-clear">&times;</button>
                     </div>
-                    <div class="form-group">
-                        <label>Uygulama Teması</label>
-                        <button type="button" id="modalThemeToggleBtn" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-primary); display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;">
-                            <svg class="theme-icon sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
-                                <circle cx="12" cy="12" r="5"></circle>
-                                <line x1="12" y1="1" x2="12" y2="3"></line>
-                                <line x1="12" y1="21" x2="12" y2="23"></line>
-                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                                <line x1="1" y1="12" x2="3" y2="12"></line>
-                                <line x1="21" y1="12" x2="23" y2="12"></line>
-                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    <div class="modal-body" style="overflow-y: auto; flex: 1; padding: 0 1.5rem 1.5rem 1.5rem;">
+                    <div id="vocabEmptyState" style="padding: 2rem; text-align: center; color: var(--text-muted); display: none;">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">📖</div>
+                        <p>Henüz kelime eklemediniz.</p>
+                        <p style="font-size: 0.9em;">Videodaki bilmediğiniz kelimelere çift tıklayıp yıldız butonuna basarak buraya kaydedebilirsiniz.</p>
+                    </div>
+                    <ul id="vocabListContainer" class="vocab-list">
+                        <!-- Vocab items injected here -->
+                    </ul>
+                </div>
+                    <div class="modal-footer" style="padding: 1rem 1.5rem; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px;">
+                        <button id="exportVocabBtn" class="btn-primary" style="display: flex; align-items: center; gap: 6px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
                             </svg>
-                            <svg class="theme-icon moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
-                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                            </svg>
-                            <span id="modalThemeToggleText">Temayı Değiştir</span>
+                            CSV İndir (Anki Uyumlu)
                         </button>
                     </div>
                 </div>
-                <div class="modal-footer" style="margin-top: 20px; text-align: right;">
-                    <button id="saveSettingsBtn" class="btn-primary">Kaydet</button>
+                
+                <!-- Vocab Detail Drawer (Side Panel) -->
+                <div id="vocabDrawer" style="display: none; width: 380px; border-left: 1px solid var(--border-color); flex-direction: column; background: var(--bg-surface);">
+                    <div class="dict-tooltip-header" style="padding: 1.25rem; border-bottom: 1px solid var(--border-color); border-radius: 0;">
+                        <div class="dict-title-group">
+                            <span class="dict-word" id="drawerDictWord">Word</span>
+                            <span class="dict-phonetic-badge" id="drawerDictPhonetic" style="display: none;"></span>
+                            <button id="drawerDictSpeakBtn" class="dict-btn-icon" title="Sesli Telaffuz (Dinle)" aria-label="Telaffuz Dinle">
+                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                </svg>
+                            </button>
+                            <span class="dict-lang-tag" id="drawerDictLangTag">EN → TR</span>
+                        </div>
+                        <button id="closeVocabDrawerBtn" class="dict-btn-close" title="Paneli Kapat">&times;</button>
+                    </div>
+                    <div class="dict-tooltip-body" id="drawerDictBody" style="flex: 1; overflow-y: auto; padding: 1.25rem;">
+                        <!-- Content injected here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Modal -->
+        <div id="historyModal" class="modal-overlay" style="display: none;">
+            <div class="modal-content modal-lg modal-col">
+                <div class="modal-header">
+                    <h3 style="display: flex; align-items: center; gap: 8px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        İzleme Geçmişim
+                    </h3>
+                    <button id="closeHistoryBtn" class="btn-clear">&times;</button>
+                </div>
+                <div class="modal-body modal-no-pad" style="flex: 1;">
+                    <div id="historyEmptyState" style="padding: 2rem; text-align: center; color: var(--text-muted); display: none;">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">🕒</div>
+                        <p>Henüz izleme geçmişiniz yok.</p>
+                        <p style="font-size: 0.9em;">İzlediğiniz videolar ve kaldığınız süreler burada listelenecektir.</p>
+                    </div>
+                    <ul id="historyListContainer" class="history-list">
+                        <!-- History items injected here -->
+                    </ul>
                 </div>
             </div>
         </div>
 
         <!-- Main Workspace (Side-by-Side: Video Player & Transcript View) -->
-        <section id="workspaceSection" class="workspace-grid" style="display: none;">
+        <section id="workspaceSection" class="workspace-grid">
             <!-- Left Column: Video Player & Metadata -->
             <div class="player-column">
                 <div class="card player-card">
-                    <div class="video-container" id="videoWrapper">
-                        <div id="youtubePlayer"></div>
-
-                        <!-- Custom Video Controls Overlay (Shows on Hover) -->
-                        <div id="customVideoControls" class="video-controls-overlay">
-                            <!-- Progress / Seek Bar with Time Tooltip -->
-                            <div class="video-progress-area" id="videoProgressArea"
-                                title="İlerletmek için tıklayın veya sürükleyin">
-                                <div class="video-progress-buffered" id="videoProgressBuffered"></div>
-                                <div class="video-progress-bar" id="videoProgressBar"></div>
-                                <div class="video-progress-thumb" id="videoProgressThumb"></div>
-                                <div class="video-time-tooltip" id="videoTimeTooltip">00:00</div>
-                            </div>
-
-                            <!-- Controls Toolbar -->
-                            <div class="video-controls-bottom">
-                                <div class="controls-left">
-                                    <!-- Play / Pause -->
-                                    <button type="button" id="ctrlPlayPauseBtn" class="ctrl-btn"
-                                        title="Oynat / Duraklat (Boşluk Tuşu)" aria-label="Oynat veya Duraklat">
-                                        <svg class="icon-play" width="18" height="18" viewBox="0 0 24 24"
-                                            fill="currentColor">
-                                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                                        </svg>
-                                        <svg class="icon-pause" width="18" height="18" viewBox="0 0 24 24"
-                                            fill="currentColor" style="display: none;">
-                                            <rect x="6" y="4" width="4" height="16"></rect>
-                                            <rect x="14" y="4" width="4" height="16"></rect>
-                                        </svg>
-                                    </button>
-
-                                    <!-- Rewind 10s -->
-                                    <button type="button" id="ctrlRewindBtn" class="ctrl-btn"
-                                        title="10 Saniye Geri Sar (Sol Ok Tuşu)" aria-label="10 Saniye Geri">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                            stroke-linejoin="round">
-                                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                                            <path d="M3 3v5h5" /><text x="12" y="15.5" font-size="7.5" font-weight="700"
-                                                fill="currentColor" stroke="none" text-anchor="middle">10</text>
-                                        </svg>
-                                    </button>
-
-                                    <!-- Forward 10s -->
-                                    <button type="button" id="ctrlForwardBtn" class="ctrl-btn"
-                                        title="10 Saniye İleri Sar (Sağ Ok Tuşu)" aria-label="10 Saniye İleri">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                            stroke-linejoin="round">
-                                            <path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-                                            <path d="M21 3v5h-5" /><text x="12" y="15.5" font-size="7.5"
-                                                font-weight="700" fill="currentColor" stroke="none"
-                                                text-anchor="middle">10</text>
-                                        </svg>
-                                    </button>
-
-                                    <!-- Volume Slider & Mute Toggle -->
-                                    <div class="ctrl-volume-group">
-                                        <button type="button" id="ctrlMuteBtn" class="ctrl-btn"
-                                            title="Sesi Aç / Kapat (M)" aria-label="Sesi Aç veya Kapat">
-                                            <svg class="icon-vol-high" width="18" height="18" viewBox="0 0 24 24"
-                                                fill="none" stroke="currentColor" stroke-width="2"
-                                                stroke-linecap="round" stroke-linejoin="round">
-                                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07">
-                                                </path>
-                                            </svg>
-                                            <svg class="icon-vol-mute" width="18" height="18" viewBox="0 0 24 24"
-                                                fill="none" stroke="currentColor" stroke-width="2"
-                                                stroke-linecap="round" stroke-linejoin="round" style="display: none;">
-                                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                                                <line x1="23" y1="9" x2="17" y2="15"></line>
-                                                <line x1="17" y1="9" x2="23" y2="15"></line>
-                                            </svg>
-                                        </button>
-                                        <input type="range" id="ctrlVolumeSlider" class="ctrl-volume-slider" min="0"
-                                            max="100" value="100" aria-label="Ses Seviyesi" />
-                                    </div>
-
-                                    <!-- Time Display -->
-                                    <div class="ctrl-time-display">
-                                        <span id="ctrlCurrentTime">00:00</span>
-                                        <span class="ctrl-time-sep">/</span>
-                                        <span id="ctrlDuration">00:00</span>
-                                    </div>
-                                </div>
-
-                                <div class="controls-right">
-                                    <!-- Playback Speed Menu -->
-                                    <div class="ctrl-speed-wrapper">
-                                        <button type="button" id="ctrlSpeedBtn" class="ctrl-speed-btn"
-                                            title="Oynatma Hızı">
-                                            <span id="ctrlSpeedText">1x</span>
-                                        </button>
-                                        <div id="ctrlSpeedMenu" class="ctrl-speed-menu" style="display: none;">
-                                            <button type="button" class="speed-opt" data-speed="0.5">0.5x</button>
-                                            <button type="button" class="speed-opt" data-speed="0.75">0.75x</button>
-                                            <button type="button" class="speed-opt active" data-speed="1">1x
-                                                (Normal)</button>
-                                            <button type="button" class="speed-opt" data-speed="1.25">1.25x</button>
-                                            <button type="button" class="speed-opt" data-speed="1.5">1.5x</button>
-                                            <button type="button" class="speed-opt" data-speed="2">2x</button>
-                                        </div>
-                                    </div>
-
-                                    <!-- Fullscreen Toggle -->
-                                    <button type="button" id="ctrlFullscreenBtn" class="ctrl-btn" title="Tam Ekran (F)"
-                                        aria-label="Tam Ekran">
-                                        <svg class="icon-fullscreen-enter" width="18" height="18" viewBox="0 0 24 24"
-                                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                            stroke-linejoin="round">
-                                            <path
-                                                d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3">
-                                            </path>
-                                        </svg>
-                                        <svg class="icon-fullscreen-exit" width="18" height="18" viewBox="0 0 24 24"
-                                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                            stroke-linejoin="round" style="display: none;">
-                                            <path
-                                                d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3">
-                                            </path>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="yt-video-container" id="ytVideoWrapper">
+                        <div id="ytEmbedPlayer"></div>
                     </div>
-
                     <div class="video-info-box">
                         <h3 id="videoTitle" class="video-title">Video Başlığı</h3>
                         <div class="video-meta-tags">
@@ -429,8 +276,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Sync Guidance Card removed -->
             </div>
 
             <!-- Right Column: Interactive Transcript & Actions -->
@@ -442,10 +287,9 @@
                             <div class="header-left">
                                 <h3 class="transcript-heading">Zaman Damgalı Transkript</h3>
                                 <span id="itemCountBadge" class="count-badge">0 satır</span>
-                                <span class="dict-guide-badge" title="Transkriptteki herhangi bir kelimeye sağ tıklayarak Türkçe anlamını ve telaffuzunu görebilirsiniz">📖 Kelimeye Sağ Tık: Sözlük</span>
                             </div>
 
-                            <div class="header-right" style="display: flex; align-items: center; gap: 1rem;">
+                            <div class="header-right" style="display: flex; align-items: center; gap: 0.75rem;">
                                 <!-- Language Selector -->
                                 <div class="lang-selector-wrapper" id="langSelectorWrapper">
                                     <label for="languageSelect">Dil:</label>
@@ -453,7 +297,7 @@
                                 </div>
 
                                 <!-- Zen Mode Button -->
-                                <button id="zenModeBtn" class="btn-action btn-secondary" style="padding: 0.35rem 0.75rem;" title="Zen Modu (Okuma Modu)">
+                                <button id="zenModeBtn" class="btn-action btn-secondary" style="padding: 0.35rem 0.75rem;" title="Zen Modu (Okuma Modu) [Cmd+Shift+Z / Ctrl+Shift+Z]">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
                                         <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
@@ -474,14 +318,21 @@
                                 <input type="text" id="transcriptSearch"
                                     placeholder="Transkript içinde kelime ara..." />
                                 <button id="clearSearchBtn" class="btn-clear" style="display: none;">&times;</button>
+                                
+                                <!-- Search Navigation Buttons (1.c) -->
+                                <div class="search-nav-group" id="searchNavGroup" style="display: none;">
+                                    <button type="button" id="prevSearchBtn" class="btn-search-nav" title="Önceki Eşleşme (Shift + Enter)">▲</button>
+                                    <button type="button" id="nextSearchBtn" class="btn-search-nav" title="Sonraki Eşleşme (Enter)">▼</button>
+                                </div>
                             </div>
 
-                            <label class="toggle-switch" title="Video oynatılırken aktif satıra otomatik kaydır">
-                                <input type="checkbox" id="autoScrollToggle" checked />
-                                <span class="slider"></span>
-                                <span class="toggle-label">Oto-Kaydır</span>
-                            </label>
-
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <label class="toggle-switch" title="Video oynatılırken aktif satıra otomatik kaydır">
+                                    <input type="checkbox" id="autoScrollToggle" checked />
+                                    <span class="slider"></span>
+                                    <span class="toggle-label">Oto-Kaydır</span>
+                                </label>
+                            </div>
                         </div>
                     </div>
 
@@ -507,15 +358,7 @@
                                 <span>Word (.docx) İndir</span>
                             </button>
 
-                            <!-- Copy to Clipboard -->
-                            <button id="copyTranscriptBtn" class="btn-action btn-secondary" title="Panoya Kopyala">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                </svg>
-                                <span>Kopyala</span>
-                            </button>
+                            <!-- Copy to Clipboard moved to header -->
 
                             <!-- Download TXT -->
                             <button id="downloadTxtBtn" class="btn-action btn-secondary"
@@ -545,7 +388,7 @@
         </section>
     </main>
 
-    <!-- Word Meaning / Dictionary Pop-up Modal (Tasarım 1 - Büyük Yüzen Kart) -->
+    <!-- Word Meaning / Dictionary Pop-up Modal -->
     <div id="dictTooltip" class="dict-tooltip" style="display: none;" role="dialog" aria-label="Kelime Sözlüğü">
         <div class="dict-tooltip-header">
             <div class="dict-title-group">
@@ -567,7 +410,13 @@
         </div>
 
         <div class="dict-tooltip-footer">
-            <span class="dict-hint" id="dictHint">💡 Sağ tık ile hızlı sözlük • ESC ile kapat</span>
+            <button id="dictSaveBtn" class="dict-btn-text" title="Kelime Defterine Ekle">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-star">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+                <span>Kaydet</span>
+            </button>
+            <span class="dict-hint" id="dictHint">💡 Sağ/çift tık ile hızlı sözlük</span>
             <button id="dictCopyBtn" class="dict-btn-text" title="Çeviriyi Kopyala">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -578,9 +427,8 @@
         </div>
     </div>
 
-    <!-- YouTube IFrame API -->
-    <script src="https://www.youtube.com/iframe_api"></script>
-    <script src="js/app.js?v=2.1"></script>
+    <!-- YouTube IFrame API (Loaded dynamically in player.js) -->
+    <script type="module" src="js/app.js?v=2.6"></script>
 </body>
 
 </html>

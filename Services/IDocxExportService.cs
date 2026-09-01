@@ -1,4 +1,4 @@
-using TranskriptOkuyucu.Models;
+using TranskriptOkuyucu.Models.Transcript;
 
 namespace TranskriptOkuyucu.Services;
 

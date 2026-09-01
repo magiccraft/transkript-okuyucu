@@ -7,10 +7,18 @@
     <RootNamespace>TranskriptOkuyucu</RootNamespace>
     <AssemblyName>TranskriptOkuyucu</AssemblyName>
     <Version>1.1.0</Version>
+    <!-- Memory & GC Optimization Settings -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+    <GarbageCollectionAdaptationMode>1</GarbageCollectionAdaptationMode>
+    <TieredPGO>true</TieredPGO>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="DocumentFormat.OpenXml" Version="3.5.1" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.9.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageReference Include="YoutubeExplode" Version="6.6.2" />
   </ItemGroup>
 
@@ -18,6 +26,13 @@
     <None Update="Data\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="TranskriptOkuyucu.Tests\**" />
+    <Content Remove="TranskriptOkuyucu.Tests\**" />
+    <EmbeddedResource Remove="TranskriptOkuyucu.Tests\**" />
+    <None Remove="TranskriptOkuyucu.Tests\**" />
   </ItemGroup>
 
 </Project>
